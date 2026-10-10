@@ -24,6 +24,10 @@ flowchart LR
   G --> H[Remove the published package]
 ```
 
+The workflow on the n8n canvas:
+
+![The workflow on the n8n canvas](images/n8n-canvas.png)
+
 1. A schedule trigger runs the workflow every 10 minutes.
 2. A small Python script looks in a handoff folder for a finished video package.
 3. If there is one, n8n reads the video and uploads it to YouTube as private, with its title, description and tags.
