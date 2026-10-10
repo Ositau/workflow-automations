@@ -1,0 +1,8 @@
+{
+  "slug": "my-first-video",
+  "title": "Example video title",
+  "description": "Example description.\n\n00:00 Intro\n01:30 First chapter",
+  "tags": "example, automation, n8n",
+  "mp4_name": "my-first-video.mp4",
+  "thumb_name": "my-first-video.png"
+}

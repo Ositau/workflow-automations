@@ -1,0 +1,341 @@
+{
+  "name": "YouTube Auto Publisher",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -640,
+        320
+      ],
+      "id": "a1000000-0000-0000-0000-000000000001",
+      "name": "Every 10mins"
+    },
+    {
+      "parameters": {
+        "command": "cd /d \"C:\\path\\to\\youtube-auto-publisher\" && python scripts\\pick_next.py \"C:\\path\\to\\handoff-folder\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        320
+      ],
+      "id": "a1000000-0000-0000-0000-000000000002",
+      "name": "Pick Next Video"
+    },
+    {
+      "parameters": {
+        "jsCode": "// pick_next.py prints one JSON line on stdout\nconst raw = ($json.stdout || '').trim();\nlet out;\ntry { out = JSON.parse(raw.split('\\n').pop()); }\ncatch (e) { out = { found: false, parseError: raw }; }\nreturn [{ json: out }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        320
+      ],
+      "id": "a1000000-0000-0000-0000-000000000003",
+      "name": "Parse"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.found }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        20,
+        320
+      ],
+      "id": "a1000000-0000-0000-0000-000000000004",
+      "name": "Found a video?"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Parse').item.json.mp4 }}",
+        "options": {
+          "dataPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        240,
+        240
+      ],
+      "id": "a1000000-0000-0000-0000-000000000005",
+      "name": "Read MP4 from disk"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('Parse').item.json.title }}",
+        "regionCode": "US",
+        "categoryId": "22",
+        "options": {
+          "description": "={{ $('Parse').item.json.description }}",
+          "privacyStatus": "private",
+          "selfDeclaredMadeForKids": false,
+          "tags": "={{ $('Parse').item.json.tags }}"
+        }
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        460,
+        240
+      ],
+      "id": "a1000000-0000-0000-0000-000000000006",
+      "name": "Upload to YouTube",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "=cd /d \"C:\\path\\to\\youtube-auto-publisher\" && python scripts\\mark_done.py {{ $('Parse').item.json.slug }} \"C:\\path\\to\\handoff-folder\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        240
+      ],
+      "id": "a1000000-0000-0000-0000-000000000009",
+      "name": "Remove published package"
+    },
+    {
+      "parameters": {
+        "content": "## YouTube Auto Publisher\nPicks the next finished video package from a handoff folder and uploads it to YouTube.\n\n**Requirements**\n- Self-hosted n8n on the machine that holds the handoff folder, with the Execute Command node enabled.\n- A YouTube OAuth2 credential, selected on both YouTube nodes.\n- The two paths in the Execute Command nodes changed to your own folders.\n\n**Flow:** pick the next package, read the video, upload to YouTube as private, wait, set the thumbnail, remove the package.",
+        "height": 280,
+        "width": 720,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        0
+      ],
+      "id": "a1000000-0000-0000-0000-0000000000aa",
+      "name": "About"
+    },
+    {
+      "parameters": {
+        "content": "## Before going public\n1. Uploads are **private** on purpose, so a person can review the video first.\n2. In YouTube Studio, set the altered or AI content disclosure. The Data API cannot set it.\n3. Then switch the video to public.",
+        "height": 260,
+        "width": 720,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        240,
+        540
+      ],
+      "id": "a1000000-0000-0000-0000-0000000000bb",
+      "name": "Publish Notes"
+    },
+    {
+      "parameters": {
+        "amount": 90,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        240
+      ],
+      "id": "a1000000-0000-0000-0000-0000000000c1",
+      "name": "Wait for processing",
+      "webhookId": "wait-for-processing-0001"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Parse').item.json.thumbnail }}",
+        "options": {
+          "dataPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        860,
+        240
+      ],
+      "id": "a1000000-0000-0000-0000-0000000000c2",
+      "name": "Read Thumbnail"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId={{ $('Upload to YouTube').item.json.uploadId }}&uploadType=media",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1060,
+        240
+      ],
+      "id": "a1000000-0000-0000-0000-0000000000c3",
+      "name": "Set Custom Thumbnail",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "YouTube account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 30000,
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Pick Next Video": {
+      "main": [
+        [
+          {
+            "node": "Parse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse": {
+      "main": [
+        [
+          {
+            "node": "Found a video?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Found a video?": {
+      "main": [
+        [
+          {
+            "node": "Read MP4 from disk",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Read MP4 from disk": {
+      "main": [
+        [
+          {
+            "node": "Upload to YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to YouTube": {
+      "main": [
+        [
+          {
+            "node": "Wait for processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for processing": {
+      "main": [
+        [
+          {
+            "node": "Read Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "Set Custom Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Custom Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "Remove published package",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 10mins": {
+      "main": [
+        [
+          {
+            "node": "Pick Next Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
